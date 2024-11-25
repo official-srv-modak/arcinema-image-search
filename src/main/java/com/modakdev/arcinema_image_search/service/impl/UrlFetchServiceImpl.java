@@ -59,7 +59,14 @@ public class UrlFetchServiceImpl implements UrlFetchService {
         jsonObject.put("image_name", imageFile);
         Object responseFromClient = client.getUrlResponse(jsonObject);
         if(responseFromClient instanceof Map)
-            return new ResponseEntity<>((Map<String, Object>)responseFromClient, HttpStatus.OK);
+        {
+            Map<String, Object> temp = (Map<String, Object>)responseFromClient;
+            if(!temp.containsKey("error"))
+                return new ResponseEntity<>(temp, HttpStatus.OK);
+            else
+                return new ResponseEntity<>(temp, HttpStatus.NOT_ACCEPTABLE);
+        }
+
         else {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "Failed to get URL from client.");
