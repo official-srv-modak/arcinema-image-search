@@ -1,6 +1,8 @@
 package com.modakdev.arcinema_image_search.service.impl;
 
 import com.modakdev.arcinema_image_search.client.UrlFetchClient;
+import com.modakdev.arcinema_image_search.models.Trailer;
+import com.modakdev.arcinema_image_search.models.TrailerRepository;
 import com.modakdev.arcinema_image_search.service.UrlFetchService;
 import netscape.javascript.JSObject;
 import org.json.simple.JSONObject;
@@ -16,7 +18,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class UrlFetchServiceImpl implements UrlFetchService {
@@ -25,6 +29,25 @@ public class UrlFetchServiceImpl implements UrlFetchService {
 
     @Autowired
     UrlFetchClient client;
+
+    @Autowired
+    TrailerRepository trailerRepository;
+
+    public ResponseEntity<Map<String, Object>> getAllMovies()
+    {
+        List<Trailer> list = trailerRepository.findAll();
+        if(!list.isEmpty())
+        {
+            Map<String, Object> temp1 = new HashMap<>();
+            temp1.put("url", list);
+            return new ResponseEntity<>(temp1, HttpStatus.OK);
+        }
+        else{
+            Map<String, Object> temp1 = new HashMap<>();
+            temp1.put("error", "No Movies found");
+            return new ResponseEntity<>(temp1, HttpStatus.NOT_FOUND);
+        }
+    }
 
     @Override
     public ResponseEntity<Map<String, Object>> uploadFiles(MultipartFile imageFile) {
@@ -54,23 +77,60 @@ public class UrlFetchServiceImpl implements UrlFetchService {
     }
 
     @Override
-    public ResponseEntity<Map<String, Object>> getUrl(String imageFile) {
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("image_name", imageFile);
-        Object responseFromClient = client.getUrlResponse(jsonObject);
-        if(responseFromClient instanceof Map)
+    public ResponseEntity<Map<String, Object>> getUrl(String imageFile, int flag) {
+        if(flag == 0)
         {
-            Map<String, Object> temp = (Map<String, Object>)responseFromClient;
-            if(!temp.containsKey("error"))
-                return new ResponseEntity<>(temp, HttpStatus.OK);
-            else
-                return new ResponseEntity<>(temp, HttpStatus.NOT_ACCEPTABLE);
-        }
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("image_name", imageFile);
+            Object responseFromClient = client.getUrlResponse(jsonObject);
+            if(responseFromClient instanceof Map)
+            {
+                Map<String, Object> temp = (Map<String, Object>)responseFromClient;
+                if(!temp.containsKey("error"))
+                    return new ResponseEntity<>(temp, HttpStatus.OK);
+                else
+                    return new ResponseEntity<>(temp, HttpStatus.NOT_ACCEPTABLE);
+            }
 
-        else {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Failed to get URL from client.");
-            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            else {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Failed to get URL from client.");
+                return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }
+        else{
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("image_name", imageFile);
+            Object responseFromClient = client.getNameResponse(jsonObject);
+            if(responseFromClient instanceof Map)
+            {
+                Map<String, Object> temp = (Map<String, Object>)responseFromClient;
+                if(!temp.containsKey("error"))
+                {
+                    String movieName = temp.get("movie_name").toString().trim();
+                    movieName = movieName.toLowerCase();
+                    Optional<String> url = trailerRepository.findUrlByMovieName(movieName);
+                    if(url.isPresent())
+                    {
+                        Map<String, Object> temp1 = new HashMap<>();
+                        temp1.put("url", url.get());
+                        return new ResponseEntity<>(temp1, HttpStatus.OK);
+                    }
+                    else{
+                        Map<String, Object> errorResponse = new HashMap<>();
+                        errorResponse.put("error", "Movie not found");
+                        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+                    }
+                }
+                else
+                    return new ResponseEntity<>(temp, HttpStatus.NOT_ACCEPTABLE);
+            }
+
+            else {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Failed to get URL from client.");
+                return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            }
         }
     }
 

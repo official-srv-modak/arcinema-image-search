@@ -7,5 +7,5 @@ import java.util.Map;
 
 public interface UrlFetchService {
     public ResponseEntity<Map<String, Object>> uploadFiles(MultipartFile imageFile);
-    public ResponseEntity<Map<String, Object>> getUrl(String imageFile);
+    public ResponseEntity<Map<String, Object>> getUrl(String imageFile, int flag);
 }

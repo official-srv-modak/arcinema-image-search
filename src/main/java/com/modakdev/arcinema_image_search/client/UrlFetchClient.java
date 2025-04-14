@@ -28,4 +28,13 @@ public class UrlFetchClient {
         ResponseEntity<Object> response = restTemplate.postForEntity(requestUrl, requestEntity, Object.class);
         return response.getBody();
     }
+    public Object getNameResponse(Object requestData)
+    {
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Object> requestEntity = new HttpEntity<>(requestData, httpHeaders);
+        String requestUrl = baseUrl + "/get-name";
+        ResponseEntity<Object> response = restTemplate.postForEntity(requestUrl, requestEntity, Object.class);
+        return response.getBody();
+    }
 }
